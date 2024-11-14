@@ -6,6 +6,19 @@
 ## 预览
 ![B站视频下载器界面预览](toolui.jpg)
 
+## 依赖库
+本项目依赖以下Python库:
+- bilibili-api-python==16.3.0  # B站API核心库
+- PySide6==6.8.0.2            # GUI界面
+- moviepy==1.0.3              # 视频处理
+- aiohttp==3.10.5             #bilibili-api的异步请求依赖
+- qasync==0.23.0              # Qt异步支持
+
+可以通过以下命令安装依赖：
+```
+pip install -r requirements.txt
+```
+
 ## 技术栈
 - Python 3.x
 - PySide6 (Qt for Python) - GUI框架
@@ -62,7 +75,7 @@ B站视频下载与剪辑工具/
 ## 使用教程
 
 ### 视频下载
-1. 复制B站视频链接或BV号到输入框
+1. 复���B站视频链接或BV号到输入框
 2. 选择下载类型(MP3/MP4音频/视频)
 3. 点击对应的下载按钮
 4. 等待下载完成
