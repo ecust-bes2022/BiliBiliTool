@@ -379,7 +379,7 @@ class ConcatWorker(QThread):
                 from moviepy.editor import concatenate_videoclips
                 final_clip = concatenate_videoclips([video1, video2])
                 
-                # 生成输出文件名
+                # 生成输出文件��
                 time_range = f"{self.format_time(self.start1)}_{self.format_time(self.end2)}"
                 output_path = os.path.join(os.path.dirname(self.file1), f"拼接_{time_range}.mp4")
                 
@@ -547,10 +547,27 @@ class MainWindow(QMainWindow):
         self.end_time = QTimeEdit()
         self.end_time.setDisplayFormat("HH:mm:ss")
         
+        self.convert_mp3_to_mp4_btn = QPushButton("MP3 To MP4")
+        self.convert_mp3_to_mp4_btn.clicked.connect(self.convert_mp3_to_mp4)
+        
         self.clip_audio_btn = QPushButton("剪辑音频")
         self.clip_audio_btn.clicked.connect(lambda: self.start_clip(True))
         self.clip_video_btn = QPushButton("剪辑视频")
         self.clip_video_btn.clicked.connect(lambda: self.start_clip(False))
+        
+        # 剪辑部分布局
+        clip_file_layout = QHBoxLayout()
+        clip_file_layout.addWidget(self.file_path_input)
+        clip_file_layout.addWidget(self.select_file_btn)
+        
+        time_layout = QHBoxLayout()
+        time_layout.addWidget(QLabel("开始时间:"))
+        time_layout.addWidget(self.start_time)
+        time_layout.addWidget(QLabel("结束时间:"))
+        time_layout.addWidget(self.end_time)
+        time_layout.addWidget(self.convert_mp3_to_mp4_btn)
+        time_layout.addWidget(self.clip_audio_btn)
+        time_layout.addWidget(self.clip_video_btn)
         
         # 拼接部分控件
         self.concat_file1_input = QLineEdit()
@@ -650,6 +667,7 @@ class MainWindow(QMainWindow):
         time_layout.addWidget(self.start_time)
         time_layout.addWidget(QLabel("结束时间:"))
         time_layout.addWidget(self.end_time)
+        time_layout.addWidget(self.convert_mp3_to_mp4_btn)
         time_layout.addWidget(self.clip_audio_btn)
         time_layout.addWidget(self.clip_video_btn)
         
@@ -752,7 +770,7 @@ class MainWindow(QMainWindow):
                     except:
                         has_video = False
                         if not has_audio:
-                            self.status_label.setText("无法读取文件：既不是有效的频也不是有效的音频")
+                            self.status_label.setText("无法取文件：既不是有效的频也不是有效的音频")
                             return
 
                     # 根据文件包含的流类型启用相应按钮
@@ -911,7 +929,7 @@ class MainWindow(QMainWindow):
                 worker.start()
                 return
         
-        # 如果��MP3文件或其他情况��音频剪辑
+        # 如果是MP3文件或其他情况，进行音频剪辑
         # 禁用按钮
         self.clip_audio_btn.setEnabled(False)
         self.clip_video_btn.setEnabled(False)
@@ -946,7 +964,7 @@ class MainWindow(QMainWindow):
         
         self.progress_bar.setValue(0)
         
-        # 禁用所有下��按钮
+        # 禁用所有下按钮
         self.download_mp3_btn.setEnabled(False)
         self.download_mp4_btn.setEnabled(False)
         self.download_m4a_btn.setEnabled(False)
@@ -1222,6 +1240,42 @@ class MainWindow(QMainWindow):
             
         if self.is_closing and not self.active_workers:
             self.close()
+
+    def convert_mp3_to_mp4(self):
+        file_path = self.file_path_input.text()
+        if not file_path:
+            self.status_label.setText("请先选择文件！")
+            return
+        
+        # 检查文件类型
+        if not file_path.lower().endswith('.mp3'):
+            self.status_label.setText("请选择MP3文件！")
+            return
+        
+        # 禁用相关按钮
+        self.clip_audio_btn.setEnabled(False)
+        self.clip_video_btn.setEnabled(False)
+        
+        # 获取文件时长
+        try:
+            audio = AudioFileClip(file_path)
+            duration = int(audio.duration)
+            audio.close()
+        except Exception as e:
+            self.status_label.setText(f"读取文件失败: {str(e)}")
+            return
+        
+        # 创建worker并设置为MP4音频输出
+        worker = ClipWorker(file_path, 0, duration, True)  # save_audio_only=True
+        worker.save_as_mp4_audio = True  # 强制设置为MP4音频输出
+        
+        # 连接信号
+        worker.progress_signal.connect(self.update_status)
+        worker.finished_signal.connect(lambda msg: self.task_finished(worker, msg))
+        
+        # 添加到活动任务列表并启动
+        self.active_workers.append(worker)
+        worker.start()
 
 def main():
     app = QApplication(sys.argv)
